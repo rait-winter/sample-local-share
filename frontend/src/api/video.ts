@@ -1,5 +1,11 @@
 import axios from 'axios';
 
+export interface VideoInfo {
+  name: string;
+  size: number;
+  modified: number;
+}
+
 export function uploadVideo(file: File) {
   const formData = new FormData();
   formData.append('file', file);
@@ -7,7 +13,7 @@ export function uploadVideo(file: File) {
 }
 
 export function listVideos() {
-  return axios.get('/api/video/list');
+  return axios.get<{videos: VideoInfo[]}>('/api/video/list');
 }
 
 export function downloadVideo(filename: string) {
@@ -16,4 +22,8 @@ export function downloadVideo(filename: string) {
 
 export function previewVideo(filename: string) {
   return `/api/video/preview/${encodeURIComponent(filename)}`;
+}
+
+export function deleteVideo(filename: string) {
+  return axios.delete(`/api/video/delete/${encodeURIComponent(filename)}`);
 } 

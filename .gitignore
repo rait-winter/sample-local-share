@@ -33,3 +33,14 @@ Thumbs.db
 *.swp
 *.env
 .env.*
+
+# Project specific
+backend/uploads/*
+backend/videos/*
+backend/message.txt
+backend/message_history.json
+!backend/uploads/.gitkeep
+!backend/videos/.gitkeep
+
+# Cursor
+.cursor/
