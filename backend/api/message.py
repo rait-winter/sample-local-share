@@ -2,10 +2,14 @@ from flask import Blueprint, request, jsonify
 import os
 import json
 from datetime import datetime
+import threading
 
 message_bp = Blueprint('message', __name__)
 MESSAGE_FILE = os.path.join(os.path.dirname(__file__), '..', 'message.txt')
 HISTORY_FILE = os.path.join(os.path.dirname(__file__), '..', 'message_history.json')
+
+MAX_MESSAGES = 20
+MAX_MESSAGES_LOCK = threading.Lock()
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -24,9 +28,9 @@ def save_history(message):
         'timestamp': datetime.now().isoformat(),
         'ip': ip
     })
-    # 只保留最近50条消息
-    if len(history) > 50:
-        history = history[-50:]
+    # 只保留最近MAX_MESSAGES条消息
+    if len(history) > get_max_messages():
+        history = history[-get_max_messages():]
     
     try:
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
@@ -82,4 +86,29 @@ def get_history():
         return jsonify({'history': history})
     
     except Exception as e:
-        return jsonify({'error': f'获取历史记录失败: {str(e)}'}), 500 
+        return jsonify({'error': f'获取历史记录失败: {str(e)}'}), 500
+
+def get_max_messages():
+    global MAX_MESSAGES
+    return MAX_MESSAGES
+
+def set_max_messages(val):
+    global MAX_MESSAGES
+    with MAX_MESSAGES_LOCK:
+        MAX_MESSAGES = val
+
+@message_bp.route('/max_count', methods=['GET', 'POST'])
+def message_max_count():
+    if request.method == 'GET':
+        return jsonify({'max_count': get_max_messages()})
+    data = request.get_json()
+    if not data or 'max_count' not in data:
+        return jsonify({'error': '缺少max_count参数'}), 400
+    try:
+        val = int(data['max_count'])
+        if val < 1 or val > 100:
+            return jsonify({'error': 'max_count应在1-100之间'}), 400
+        set_max_messages(val)
+        return jsonify({'max_count': get_max_messages()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400 

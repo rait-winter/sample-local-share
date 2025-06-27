@@ -3,12 +3,15 @@ import os
 from werkzeug.utils import secure_filename
 import json
 import socket
+import threading
 
 file_bp = Blueprint('file', __name__)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads')
 ALLOWED_FILE_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'md', 'zip', 'rar', '7z', 'csv', 'xlsx', 'docx', 'pptx'])
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 FILE_INFO_PATH = os.path.join(os.path.dirname(__file__), '..', 'file_info.json')
+MAX_FILES = 10
+MAX_FILES_LOCK = threading.Lock()
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -50,6 +53,13 @@ def get_local_ip():
     finally:
         s.close()
     return ip
+
+def clean_old_files(folder, max_files):
+    files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+    if len(files) > max_files:
+        files.sort(key=lambda x: os.path.getmtime(x))
+        for f in files[:-max_files]:
+            os.remove(f)
 
 @file_bp.route('/upload', methods=['POST'])
 def upload_file():
@@ -94,6 +104,8 @@ def upload_file():
         if ip == '127.0.0.1':
             ip = get_local_ip()
         save_file_ip(filename, ip)
+        
+        clean_old_files(UPLOAD_FOLDER, MAX_FILES)
         
         return jsonify({
             'message': '文件上传成功',
@@ -181,4 +193,22 @@ def delete_file(filename):
         return jsonify({'message': '文件删除成功'})
     
     except Exception as e:
-        return jsonify({'error': f'删除失败: {str(e)}'}), 500 
+        return jsonify({'error': f'删除失败: {str(e)}'}), 500
+
+@file_bp.route('/max_count', methods=['GET', 'POST'])
+def file_max_count():
+    global MAX_FILES
+    if request.method == 'GET':
+        return jsonify({'max_count': MAX_FILES})
+    data = request.get_json()
+    if not data or 'max_count' not in data:
+        return jsonify({'error': '缺少max_count参数'}), 400
+    try:
+        val = int(data['max_count'])
+        if val < 1 or val > 100:
+            return jsonify({'error': 'max_count应在1-100之间'}), 400
+        with MAX_FILES_LOCK:
+            MAX_FILES = val
+        return jsonify({'max_count': MAX_FILES})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400 

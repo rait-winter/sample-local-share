@@ -5,6 +5,7 @@ import { ChatLineSquare, Document, VideoCamera, Delete, View, Download, InfoFill
 import { sendMessage, getMessage, getMessageHistory } from './api/message'
 import { uploadFile, listFiles, downloadFile as dlFile, previewFile, deleteFile } from './api/file'
 import { uploadVideo, listVideos, downloadVideo as dlVideo, previewVideo, deleteVideo } from './api/video'
+import SettingsDialog from './components/SettingsDialog.vue'
 
 // 消息
 const message = ref('')
@@ -312,8 +313,36 @@ const copyIp = async (ip: string) => {
   }
 }
 
+// 复制消息内容方法
+const copyMsgContent = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('消息已复制到剪贴板')
+  } catch {
+    try {
+      const input = document.createElement('input')
+      input.value = text
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      ElMessage.success('消息已复制到剪贴板')
+    } catch {
+      ElMessage.error('复制失败，请手动复制')
+    }
+  }
+}
+
 const handleFilePageChange = (val: number) => { filePage.value = val }
 const handleVideoPageChange = (val: number) => { videoPage.value = val }
+
+const showSettings = ref(false)
+
+function handleSettingsSaved() {
+  fetchMessageHistory()
+  fetchFiles()
+  fetchVideos()
+}
 
 onMounted(() => {
   fetchMessage()
@@ -337,13 +366,15 @@ onUnmounted(() => {
         <span class="subtitle">安全 · 极速 · 局域网文件/消息/视频互传</span>
       </div>
     </header>
-    <!-- 新增：本机访问地址栏 -->
-    <div class="local-url-bar">
-      <span>本机访问地址：</span>
-      <span class="local-url">{{ localUrl }}</span>
-      <el-button type="primary" size="small" @click="copyLocalUrl" style="margin-left: 8px;">复制</el-button>
+    <!-- 地址栏靠左，设置按钮右上角浮动 -->
+    <div class="top-row-bar">
+      <div class="local-url-bar-flex">
+        <span>本机访问地址：</span>
+        <span class="local-url">{{ localUrl }}</span>
+        <el-button type="primary" size="small" class="url-btn" @click="copyLocalUrl">复制</el-button>
+      </div>
+      <el-button type="primary" size="small" class="setting-btn" @click="showSettings = true">设置</el-button>
     </div>
-    
     <main class="main-content">
       <!-- 消息模块 -->
       <div class="module-card">
@@ -369,7 +400,9 @@ onUnmounted(() => {
             </el-button>
           </div>
           <div class="module-right">
-            <div class="msg-title">当前消息：</div>
+            <div class="msg-title">当前消息：
+              <el-button v-if="lastMessage" type="primary" link size="small" style="margin-left:8px;" @click="copyMsgContent(lastMessage)">复制</el-button>
+            </div>
             <div class="msg-content" v-if="lastMessage">{{ lastMessage }}</div>
             <div class="msg-empty" v-else>暂无消息</div>
             
@@ -378,7 +411,9 @@ onUnmounted(() => {
               <div class="history-title">消息历史：</div>
               <div class="history-list">
                 <div v-for="(item, index) in messageHistory" :key="index" class="history-item">
-                  <div class="history-text">{{ item.text }}</div>
+                  <div class="history-text">{{ item.text }}
+                    <el-button type="primary" link size="small" style="margin-left:8px;" @click="copyMsgContent(item.text)">复制</el-button>
+                  </div>
                   <div class="history-time">{{ new Date(item.timestamp).toLocaleString('zh-CN') }}
                     <el-button type="info" link size="small" @click="showMsgDetail(item)">
                       <el-icon><InfoFilled /></el-icon>
@@ -660,6 +695,8 @@ onUnmounted(() => {
         </div>
       </div>
     </el-dialog>
+
+    <SettingsDialog v-model="showSettings" @saved="handleSettingsSaved" />
   </div>
 </template>
 
@@ -847,24 +884,47 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.local-url-bar {
+.top-row-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0 16px 0;
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.local-url-bar-flex {
   background: #f8f9fa;
   border-radius: 10px;
-  margin: 12px 0 16px 0;
   padding: 10px 18px;
   font-size: 15px;
   color: #2c3e50;
   display: flex;
   align-items: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  width: fit-content;
+  gap: 8px;
+}
+.url-btn {
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 18px !important;
+  padding: 0 18px !important;
+  font-weight: 500;
+}
+.setting-btn {
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 18px !important;
+  padding: 0 18px !important;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .local-url {
   font-weight: bold;
   color: #3b82f6;
   margin-left: 4px;
+  margin-right: 8px;
 }
-
 @media (max-width: 768px) {
   .module-body {
     grid-template-columns: 1fr;
@@ -877,6 +937,20 @@ onUnmounted(() => {
   .topbar-inner {
     flex-direction: column;
     text-align: center;
+  }
+  .top-row-bar {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .local-url-bar-flex {
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .setting-btn {
+    align-self: flex-end;
+    margin-top: 4px;
   }
 }
 

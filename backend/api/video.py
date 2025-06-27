@@ -3,12 +3,15 @@ import os
 from werkzeug.utils import secure_filename
 import json
 import socket
+import threading
 
 video_bp = Blueprint('video', __name__)
 VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'videos')
 ALLOWED_VIDEO_EXTENSIONS = set(['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm'])
 MAX_VIDEO_SIZE = 500 * 1024 * 1024  # 500MB
 VIDEO_INFO_PATH = os.path.join(os.path.dirname(__file__), '..', 'video_info.json')
+MAX_VIDEOS = 10
+MAX_VIDEOS_LOCK = threading.Lock()
 
 if not os.path.exists(VIDEO_FOLDER):
     os.makedirs(VIDEO_FOLDER)
@@ -49,6 +52,13 @@ def get_local_ip():
     finally:
         s.close()
     return ip
+
+def clean_old_videos(folder, max_videos):
+    files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+    if len(files) > max_videos:
+        files.sort(key=lambda x: os.path.getmtime(x))
+        for f in files[:-max_videos]:
+            os.remove(f)
 
 @video_bp.route('/upload', methods=['POST'])
 def upload_video():
@@ -92,6 +102,8 @@ def upload_video():
         if ip == '127.0.0.1':
             ip = get_local_ip()
         save_video_ip(filename, ip)
+        
+        clean_old_videos(VIDEO_FOLDER, MAX_VIDEOS)
         
         return jsonify({
             'message': '视频上传成功',
@@ -166,4 +178,22 @@ def delete_video(filename):
         return jsonify({'message': '视频删除成功'})
     
     except Exception as e:
-        return jsonify({'error': f'删除失败: {str(e)}'}), 500 
+        return jsonify({'error': f'删除失败: {str(e)}'}), 500
+
+@video_bp.route('/max_count', methods=['GET', 'POST'])
+def video_max_count():
+    global MAX_VIDEOS
+    if request.method == 'GET':
+        return jsonify({'max_count': MAX_VIDEOS})
+    data = request.get_json()
+    if not data or 'max_count' not in data:
+        return jsonify({'error': '缺少max_count参数'}), 400
+    try:
+        val = int(data['max_count'])
+        if val < 1 or val > 100:
+            return jsonify({'error': 'max_count应在1-100之间'}), 400
+        with MAX_VIDEOS_LOCK:
+            MAX_VIDEOS = val
+        return jsonify({'max_count': MAX_VIDEOS})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400 
