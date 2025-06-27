@@ -674,9 +674,10 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  padding: 24px 8px;
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .topbar-inner {
@@ -692,21 +693,22 @@ onUnmounted(() => {
 }
 
 .title {
-  font-size: 24px;
+  font-size: 36px;
   font-weight: bold;
   color: #2c3e50;
 }
 
 .subtitle {
+  font-size: 22px;
   color: #7f8c8d;
-  font-size: 14px;
 }
 
 .main-content {
   display: grid;
-  gap: 20px;
-  max-width: 1400px;
+  gap: 24px;
+  max-width: 1920px;
   margin: 0 auto;
+  padding: 0 8px;
 }
 
 .module-card {
@@ -721,7 +723,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: 26px;
   font-weight: bold;
   color: #2c3e50;
   margin-bottom: 20px;
@@ -756,13 +758,10 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.btn {
-  height: 40px;
+.btn, .upload-btn {
+  font-size: 22px !important;
+  height: 54px;
   font-weight: 500;
-}
-
-.upload-btn {
-  margin-top: 8px;
 }
 
 .module-right {
@@ -919,49 +918,49 @@ onUnmounted(() => {
   color: #aaa;
 }
 
-.detail-item {
-  margin-bottom: 12px;
+.el-dialog__body {
+  padding: 32px 32px 24px 32px !important;
 }
 
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
 .detail-label {
   font-weight: bold;
   color: #2c3e50;
-  margin-right: 8px;
-  min-width: 80px;
-  display: inline-block;
+  min-width: 100px;
+  text-align: right;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
-
-.detail-value {
-  color: #6c757d;
+.detail-value, .ip-address {
+  color: #2563eb;
+  font-size: 22px;
+  word-break: break-all;
 }
-
-.message-content {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-top: 4px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 120px;
-  overflow-y: auto;
-}
-
 .ip-section {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 2px;
+}
+.el-dialog__title {
+  font-size: 26px !important;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.el-dialog {
+  border-radius: 16px !important;
 }
 
-.ip-address {
-  font-family: 'Courier New', monospace;
-  font-weight: bold;
-  color: #2563eb;
-  background: #eff6ff;
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #dbeafe;
-  font-size: 14px;
+body, .main-bg {
+  font-size: 22px;
+}
+
+.el-input__inner, .el-textarea__inner {
+  font-size: 22px !important;
 }
 </style>
