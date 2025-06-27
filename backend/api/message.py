@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import threading
 
+# 消息相关API蓝图
 message_bp = Blueprint('message', __name__)
 MESSAGE_FILE = os.path.join(os.path.dirname(__file__), '..', 'message.txt')
 HISTORY_FILE = os.path.join(os.path.dirname(__file__), '..', 'message_history.json')
@@ -40,6 +41,11 @@ def save_history(message):
 
 @message_bp.route('/', methods=['POST'])
 def post_message():
+    """
+    发送新消息接口。
+    参数: text - 消息内容
+    返回: 保存结果、消息内容、时间戳
+    """
     try:
         data = request.get_json()
         if not data or 'text' not in data:
@@ -67,6 +73,10 @@ def post_message():
 
 @message_bp.route('/', methods=['GET'])
 def get_message():
+    """
+    获取当前最新消息。
+    返回: 消息内容
+    """
     try:
         if os.path.exists(MESSAGE_FILE):
             with open(MESSAGE_FILE, 'r', encoding='utf-8') as f:
@@ -81,6 +91,10 @@ def get_message():
 
 @message_bp.route('/history', methods=['GET'])
 def get_history():
+    """
+    获取历史消息记录。
+    返回: 消息内容、时间戳、IP等
+    """
     try:
         history = load_history()
         return jsonify({'history': history})
@@ -99,6 +113,10 @@ def set_max_messages(val):
 
 @message_bp.route('/max_count', methods=['GET', 'POST'])
 def message_max_count():
+    """
+    获取/设置消息最大保留条数。
+    GET返回当前数量，POST设置新数量。
+    """
     if request.method == 'GET':
         return jsonify({'max_count': get_max_messages()})
     data = request.get_json()

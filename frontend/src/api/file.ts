@@ -1,3 +1,7 @@
+// file.ts
+// 文件相关API封装，提供文件上传、列表、下载、预览、删除、最大数量设置等方法
+// 用于前端与后端文件API交互
+
 import axios from 'axios';
 
 export interface FileInfo {
@@ -6,24 +10,48 @@ export interface FileInfo {
   modified: number;
 }
 
+/**
+ * 上传文件
+ * @param file 文件对象
+ * @returns Promise<AxiosResponse>
+ */
 export function uploadFile(file: File) {
   const formData = new FormData();
   formData.append('file', file);
   return axios.post('/api/file/upload', formData);
 }
 
+/**
+ * 获取文件列表
+ * @returns Promise<AxiosResponse<{files: any[]}>>
+ */
 export function listFiles() {
   return axios.get<{files: FileInfo[]}>('/api/file/list');
 }
 
-export function downloadFile(filename: string) {
-  return `/api/file/download/${encodeURIComponent(filename)}`;
+/**
+ * 获取文件下载链接
+ * @param name 文件名
+ * @returns 下载URL
+ */
+export function downloadFile(name: string) {
+  return `/api/file/download/${encodeURIComponent(name)}`;
 }
 
-export function previewFile(filename: string) {
-  return `/api/file/preview/${encodeURIComponent(filename)}`;
+/**
+ * 获取文件预览链接
+ * @param name 文件名
+ * @returns 预览URL
+ */
+export function previewFile(name: string) {
+  return `/api/file/preview/${encodeURIComponent(name)}`;
 }
 
-export function deleteFile(filename: string) {
-  return axios.delete(`/api/file/delete/${encodeURIComponent(filename)}`);
+/**
+ * 删除文件
+ * @param name 文件名
+ * @returns Promise<AxiosResponse>
+ */
+export function deleteFile(name: string) {
+  return axios.delete(`/api/file/delete/${encodeURIComponent(name)}`);
 } 

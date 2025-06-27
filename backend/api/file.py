@@ -5,6 +5,7 @@ import json
 import socket
 import threading
 
+# 文件相关API蓝图
 file_bp = Blueprint('file', __name__)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads')
 ALLOWED_FILE_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'md', 'zip', 'rar', '7z', 'csv', 'xlsx', 'docx', 'pptx'])
@@ -63,6 +64,10 @@ def clean_old_files(folder, max_files):
 
 @file_bp.route('/upload', methods=['POST'])
 def upload_file():
+    """
+    上传文件接口。支持自动重命名、大小校验、类型校验、记录上传IP。
+    返回: 上传结果、文件名、大小、上传IP。
+    """
     try:
         if 'file' not in request.files:
             return jsonify({'error': '没有选择文件'}), 400
@@ -119,6 +124,10 @@ def upload_file():
 
 @file_bp.route('/list', methods=['GET'])
 def list_files():
+    """
+    获取所有已上传文件列表，按修改时间倒序。
+    返回: 文件名、大小、修改时间、上传IP。
+    """
     try:
         files = []
         for filename in os.listdir(UPLOAD_FOLDER):
@@ -148,6 +157,11 @@ def list_files():
 
 @file_bp.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
+    """
+    下载指定文件。
+    参数: filename - 文件名
+    返回: 文件二进制流
+    """
     try:
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         if not os.path.exists(file_path):
@@ -160,6 +174,11 @@ def download_file(filename):
 
 @file_bp.route('/preview/<filename>', methods=['GET'])
 def preview_file(filename):
+    """
+    预览文件内容。支持图片/文本类型。
+    参数: filename - 文件名
+    返回: 图片流或HTML文本
+    """
     try:
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         if not os.path.exists(file_path):
@@ -184,6 +203,11 @@ def preview_file(filename):
 
 @file_bp.route('/delete/<filename>', methods=['DELETE'])
 def delete_file(filename):
+    """
+    删除指定文件。
+    参数: filename - 文件名
+    返回: 删除结果
+    """
     try:
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         if not os.path.exists(file_path):
@@ -197,6 +221,10 @@ def delete_file(filename):
 
 @file_bp.route('/max_count', methods=['GET', 'POST'])
 def file_max_count():
+    """
+    获取/设置文件最大保留数量。
+    GET返回当前数量，POST设置新数量。
+    """
     global MAX_FILES
     if request.method == 'GET':
         return jsonify({'max_count': MAX_FILES})

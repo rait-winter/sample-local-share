@@ -1,3 +1,13 @@
+<!--
+App.vue
+主页面组件，负责整体布局、消息/文件/视频管理、统一设置弹窗、全局样式等。
+包含：
+- 消息管理区（发送、历史、复制）
+- 文件管理区（上传、列表、预览、下载、删除、详情）
+- 视频管理区（上传、列表、预览、下载、删除、详情）
+- 统一设置弹窗
+- 本机访问地址栏、右上角设置按钮
+-->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

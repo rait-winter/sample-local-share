@@ -1,3 +1,6 @@
+// main.ts
+// 前端应用入口文件，负责创建Vue应用实例、挂载根组件、引入全局样式等
+
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'

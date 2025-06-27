@@ -1,3 +1,13 @@
+/*
+  dev.cjs
+  前端开发启动脚本：
+  - 随机分配五位端口并检测可用性
+  - Windows下自动开放/关闭防火墙端口（需netsh）
+  - 启动Vite开发服务器，端口和host自动注入
+  - 支持无netsh环境，自动降级
+  - 仅支持Windows原生终端
+*/
+
 if (process.platform !== 'win32') {
   console.error('本脚本仅支持Windows系统（需netsh命令）');
   process.exit(1);
@@ -33,6 +43,7 @@ function checkPort(port) {
   });
 }
 
+// 查找可用端口，最多尝试20次
 async function findAvailablePort() {
   for (let i = 0; i < 20; i++) {
     const port = getRandomPort();
@@ -41,6 +52,7 @@ async function findAvailablePort() {
   throw new Error('未找到可用端口');
 }
 
+// 主流程：分配端口、开放防火墙、启动Vite、退出时关闭防火墙
 async function main() {
   const port = await findAvailablePort();
   const ruleName = `vite-dev-${port}`;

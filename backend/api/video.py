@@ -5,6 +5,7 @@ import json
 import socket
 import threading
 
+# 视频相关API蓝图
 video_bp = Blueprint('video', __name__)
 VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'videos')
 ALLOWED_VIDEO_EXTENSIONS = set(['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm'])
@@ -62,6 +63,10 @@ def clean_old_videos(folder, max_videos):
 
 @video_bp.route('/upload', methods=['POST'])
 def upload_video():
+    """
+    上传视频接口。支持自动重命名、大小校验、类型校验、记录上传IP。
+    返回: 上传结果、文件名、大小、上传IP。
+    """
     try:
         if 'file' not in request.files:
             return jsonify({'error': '没有选择文件'}), 400
@@ -117,6 +122,10 @@ def upload_video():
 
 @video_bp.route('/list', methods=['GET'])
 def list_videos():
+    """
+    获取所有已上传视频列表，按修改时间倒序。
+    返回: 视频名、大小、修改时间、上传IP。
+    """
     try:
         videos = []
         for filename in os.listdir(VIDEO_FOLDER):
@@ -145,6 +154,11 @@ def list_videos():
 
 @video_bp.route('/download/<filename>', methods=['GET'])
 def download_video(filename):
+    """
+    下载指定视频文件。
+    参数: filename - 视频文件名
+    返回: 视频二进制流
+    """
     try:
         file_path = os.path.join(VIDEO_FOLDER, filename)
         if not os.path.exists(file_path):
@@ -157,6 +171,11 @@ def download_video(filename):
 
 @video_bp.route('/preview/<filename>', methods=['GET'])
 def preview_video(filename):
+    """
+    预览视频内容。
+    参数: filename - 视频文件名
+    返回: 视频流
+    """
     try:
         file_path = os.path.join(VIDEO_FOLDER, filename)
         if not os.path.exists(file_path):
@@ -169,6 +188,11 @@ def preview_video(filename):
 
 @video_bp.route('/delete/<filename>', methods=['DELETE'])
 def delete_video(filename):
+    """
+    删除指定视频文件。
+    参数: filename - 视频文件名
+    返回: 删除结果
+    """
     try:
         file_path = os.path.join(VIDEO_FOLDER, filename)
         if not os.path.exists(file_path):
@@ -182,6 +206,10 @@ def delete_video(filename):
 
 @video_bp.route('/max_count', methods=['GET', 'POST'])
 def video_max_count():
+    """
+    获取/设置视频最大保留数量。
+    GET返回当前数量，POST设置新数量。
+    """
     global MAX_VIDEOS
     if request.method == 'GET':
         return jsonify({'max_count': MAX_VIDEOS})

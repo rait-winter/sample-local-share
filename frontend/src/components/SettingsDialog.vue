@@ -1,3 +1,11 @@
+<!--
+SettingsDialog.vue
+统一设置弹窗组件，集中管理消息/文件/视频最大保留数量。
+props: modelValue 控制弹窗显示
+emit: update:modelValue 控制父组件弹窗开关，saved 通知设置已保存
+主要逻辑：表单校验、API交互、保存后自动刷新
+-->
+
 <template>
   <el-dialog v-model="visible" title="系统设置" width="400px" @close="onClose">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
@@ -48,6 +56,7 @@ const rules = {
 };
 const loading = ref(false);
 
+// fetchSettings: 获取当前设置，弹窗打开时自动调用
 async function fetchSettings() {
   loading.value = true;
   try {
@@ -72,6 +81,7 @@ function onClose() {
   visible.value = false;
 }
 
+// onSave: 校验表单并依次调用后端API保存设置，成功后emit('saved')
 async function onSave() {
   await formRef.value.validate();
   loading.value = true;

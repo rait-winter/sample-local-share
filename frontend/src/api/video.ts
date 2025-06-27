@@ -1,3 +1,7 @@
+// video.ts
+// 视频相关API封装，提供视频上传、列表、下载、预览、删除、最大数量设置等方法
+// 用于前端与后端视频API交互
+
 import axios from 'axios';
 
 export interface VideoInfo {
@@ -6,24 +10,48 @@ export interface VideoInfo {
   modified: number;
 }
 
+/**
+ * 上传视频
+ * @param file 视频文件对象
+ * @returns Promise<AxiosResponse>
+ */
 export function uploadVideo(file: File) {
   const formData = new FormData();
   formData.append('file', file);
   return axios.post('/api/video/upload', formData);
 }
 
+/**
+ * 获取视频列表
+ * @returns Promise<AxiosResponse<{videos: any[]}>>
+ */
 export function listVideos() {
   return axios.get<{videos: VideoInfo[]}>('/api/video/list');
 }
 
-export function downloadVideo(filename: string) {
-  return `/api/video/download/${encodeURIComponent(filename)}`;
+/**
+ * 获取视频下载链接
+ * @param name 视频文件名
+ * @returns 下载URL
+ */
+export function downloadVideo(name: string) {
+  return `/api/video/download/${encodeURIComponent(name)}`;
 }
 
-export function previewVideo(filename: string) {
-  return `/api/video/preview/${encodeURIComponent(filename)}`;
+/**
+ * 获取视频预览链接
+ * @param name 视频文件名
+ * @returns 预览URL
+ */
+export function previewVideo(name: string) {
+  return `/api/video/preview/${encodeURIComponent(name)}`;
 }
 
-export function deleteVideo(filename: string) {
-  return axios.delete(`/api/video/delete/${encodeURIComponent(filename)}`);
+/**
+ * 删除视频
+ * @param name 视频文件名
+ * @returns Promise<AxiosResponse>
+ */
+export function deleteVideo(name: string) {
+  return axios.delete(`/api/video/delete/${encodeURIComponent(name)}`);
 } 
