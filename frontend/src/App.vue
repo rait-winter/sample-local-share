@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ChatLineSquare, Document, VideoCamera, Delete, View, Download } from '@element-plus/icons-vue'
+import { ChatLineSquare, Document, VideoCamera, Delete, View, Download, InfoFilled } from '@element-plus/icons-vue'
 import { sendMessage, getMessage, getMessageHistory } from './api/message'
 import { uploadFile, listFiles, downloadFile as dlFile, previewFile, deleteFile } from './api/file'
 import { uploadVideo, listVideos, downloadVideo as dlVideo, previewVideo, deleteVideo } from './api/video'
@@ -56,6 +56,12 @@ const fileList = ref<Array<{name: string, size: number, modified: number}>>([])
 const filePreviewVisible = ref(false)
 const filePreviewUrl = ref('')
 const filePreviewContent = ref('')
+
+// 文件分页
+const filePage = ref(1)
+const filePageSize = ref(10)
+const fileTotal = computed(() => fileList.value.length)
+const filePageData = computed(() => fileList.value.slice((filePage.value-1)*filePageSize.value, filePage.value*filePageSize.value))
 
 const beforeFileUpload = (rawFile: File) => {
   file.value = rawFile
@@ -136,6 +142,12 @@ const loadingVideo = ref(false)
 const videoList = ref<Array<{name: string, size: number, modified: number}>>([])
 const videoPreviewVisible = ref(false)
 const videoPreviewUrl = ref('')
+
+// 视频分页
+const videoPage = ref(1)
+const videoPageSize = ref(10)
+const videoTotal = computed(() => videoList.value.length)
+const videoPageData = computed(() => videoList.value.slice((videoPage.value-1)*videoPageSize.value, videoPage.value*videoPageSize.value))
 
 const beforeVideoUpload = (rawFile: File) => {
   video.value = rawFile
@@ -234,6 +246,75 @@ const stopPolling = () => {
   if (videoPollInterval) clearInterval(videoPollInterval)
 }
 
+// 新增：本机访问地址
+const localUrl = ref(window.location.origin)
+const copyLocalUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(localUrl.value)
+    ElMessage.success('地址已复制到剪贴板')
+  } catch {
+    // 降级方案：使用input+execCommand
+    try {
+      const input = document.createElement('input')
+      input.value = localUrl.value
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      ElMessage.success('地址已复制到剪贴板')
+    } catch {
+      ElMessage.error('复制失败，请手动复制')
+    }
+  }
+}
+
+// 文件详情弹窗
+const fileDetailVisible = ref(false)
+const fileDetail = ref<any>({})
+const showFileDetail = (row: any) => {
+  fileDetail.value = { ...row }
+  fileDetailVisible.value = true
+}
+
+// 视频详情弹窗
+const videoDetailVisible = ref(false)
+const videoDetail = ref<any>({})
+const showVideoDetail = (row: any) => {
+  videoDetail.value = { ...row }
+  videoDetailVisible.value = true
+}
+
+// 消息详情弹窗
+const msgDetailVisible = ref(false)
+const msgDetail = ref<any>({})
+const showMsgDetail = (row: any) => {
+  msgDetail.value = { ...row }
+  msgDetailVisible.value = true
+}
+
+// 复制IP方法
+const copyIp = async (ip: string) => {
+  try {
+    await navigator.clipboard.writeText(ip)
+    ElMessage.success('IP已复制到剪贴板')
+  } catch {
+    try {
+      const input = document.createElement('input')
+      input.value = ip
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      ElMessage.success('IP已复制到剪贴板')
+    } catch {
+      ElMessage.error('复制失败，请手动复制')
+    }
+  }
+}
+
+const handleFilePageChange = (val: number) => { filePage.value = val }
+const handleVideoPageChange = (val: number) => { videoPage.value = val }
+
 onMounted(() => {
   fetchMessage()
   fetchMessageHistory()
@@ -256,6 +337,12 @@ onUnmounted(() => {
         <span class="subtitle">安全 · 极速 · 局域网文件/消息/视频互传</span>
       </div>
     </header>
+    <!-- 新增：本机访问地址栏 -->
+    <div class="local-url-bar">
+      <span>本机访问地址：</span>
+      <span class="local-url">{{ localUrl }}</span>
+      <el-button type="primary" size="small" @click="copyLocalUrl" style="margin-left: 8px;">复制</el-button>
+    </div>
     
     <main class="main-content">
       <!-- 消息模块 -->
@@ -292,7 +379,11 @@ onUnmounted(() => {
               <div class="history-list">
                 <div v-for="(item, index) in messageHistory" :key="index" class="history-item">
                   <div class="history-text">{{ item.text }}</div>
-                  <div class="history-time">{{ new Date(item.timestamp).toLocaleString('zh-CN') }}</div>
+                  <div class="history-time">{{ new Date(item.timestamp).toLocaleString('zh-CN') }}
+                    <el-button type="info" link size="small" @click="showMsgDetail(item)">
+                      <el-icon><InfoFilled /></el-icon>
+                    </el-button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -315,6 +406,12 @@ onUnmounted(() => {
               <el-button type="primary">选择文件</el-button>
               <div class="el-upload__text">拖拽文件到此处上传</div>
             </el-upload>
+            <div class="selected-file-name" v-if="file">
+              已选文件：{{ file.name }}
+            </div>
+            <div class="selected-file-name empty" v-else>
+              暂未选择文件
+            </div>
             <el-button
               type="success"
               class="btn upload-btn"
@@ -327,32 +424,60 @@ onUnmounted(() => {
           </div>
           <div class="module-right">
             <div class="list-title">文件列表</div>
-            <el-table :data="fileList" border style="width: 100%;margin-top:8px;" size="small">
-              <el-table-column prop="name" label="文件名" min-width="200" />
-              <el-table-column prop="size" label="大小" width="100">
-                <template #default="scope">
-                  {{ formatSize(scope.row.size) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="modified" label="修改时间" width="150">
-                <template #default="scope">
-                  {{ formatDate(scope.row.modified) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="200" fixed="right">
-                <template #default="scope">
-                  <el-button type="primary" link size="small" @click="previewFileHandler(scope.row.name)">
-                    <el-icon><View /></el-icon> 预览
-                  </el-button>
-                  <el-button type="success" link size="small" @click="downloadFileHandler(scope.row.name)">
-                    <el-icon><Download /></el-icon> 下载
-                  </el-button>
-                  <el-button type="danger" link size="small" @click="deleteFileHandler(scope.row.name)">
-                    <el-icon><Delete /></el-icon> 删除
-                  </el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="table-scroll">
+              <el-table :data="filePageData" border style="width: 100%;margin-top:8px;" size="small" :empty-text="'暂无文件'" highlight-current-row>
+                <el-table-column prop="name" label="文件名" min-width="180">
+                  <template #default="scope">
+                    <span class="ellipsis" :title="scope.row.name">{{ scope.row.name }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="size" label="大小" width="100">
+                  <template #default="scope">
+                    {{ formatSize(scope.row.size) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="modified" label="修改时间" width="150">
+                  <template #default="scope">
+                    {{ formatDate(scope.row.modified) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="240" fixed="right">
+                  <template #default="scope">
+                    <el-tooltip content="预览" placement="top">
+                      <el-button type="primary" link size="small" @click="previewFileHandler(scope.row.name)">
+                        <el-icon><View /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="下载" placement="top">
+                      <el-button type="success" link size="small" @click="downloadFileHandler(scope.row.name)">
+                        <el-icon><Download /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="删除" placement="top">
+                      <el-button type="danger" link size="small" @click="deleteFileHandler(scope.row.name)">
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="详情" placement="top">
+                      <el-button type="info" link size="small" @click="showFileDetail(scope.row)">
+                        <el-icon><InfoFilled /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <el-pagination
+              v-if="fileTotal > filePageSize"
+              style="margin: 8px 0 0 0; text-align: right;"
+              background
+              layout="prev, pager, next, jumper"
+              :total="fileTotal"
+              :page-size="filePageSize"
+              :current-page.sync="filePage"
+              @current-change="handleFilePageChange"
+              :hide-on-single-page="true"
+            />
           </div>
         </div>
       </div>
@@ -373,6 +498,12 @@ onUnmounted(() => {
               <el-button type="primary">选择视频</el-button>
               <div class="el-upload__text">拖拽视频到此处上传</div>
             </el-upload>
+            <div class="selected-file-name" v-if="video">
+              已选视频：{{ video.name }}
+            </div>
+            <div class="selected-file-name empty" v-else>
+              暂未选择视频
+            </div>
             <el-button
               type="success"
               class="btn upload-btn"
@@ -385,32 +516,60 @@ onUnmounted(() => {
           </div>
           <div class="module-right">
             <div class="list-title">视频列表</div>
-            <el-table :data="videoList" border style="width: 100%;margin-top:8px;" size="small">
-              <el-table-column prop="name" label="视频名" min-width="200" />
-              <el-table-column prop="size" label="大小" width="100">
-                <template #default="scope">
-                  {{ formatSize(scope.row.size) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="modified" label="修改时间" width="150">
-                <template #default="scope">
-                  {{ formatDate(scope.row.modified) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="200" fixed="right">
-                <template #default="scope">
-                  <el-button type="primary" link size="small" @click="previewVideoHandler(scope.row.name)">
-                    <el-icon><View /></el-icon> 预览
-                  </el-button>
-                  <el-button type="success" link size="small" @click="downloadVideoHandler(scope.row.name)">
-                    <el-icon><Download /></el-icon> 下载
-                  </el-button>
-                  <el-button type="danger" link size="small" @click="deleteVideoHandler(scope.row.name)">
-                    <el-icon><Delete /></el-icon> 删除
-                  </el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="table-scroll">
+              <el-table :data="videoPageData" border style="width: 100%;margin-top:8px;" size="small" :empty-text="'暂无视频'" highlight-current-row>
+                <el-table-column prop="name" label="视频名" min-width="180">
+                  <template #default="scope">
+                    <span class="ellipsis" :title="scope.row.name">{{ scope.row.name }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="size" label="大小" width="100">
+                  <template #default="scope">
+                    {{ formatSize(scope.row.size) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="modified" label="修改时间" width="150">
+                  <template #default="scope">
+                    {{ formatDate(scope.row.modified) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="240" fixed="right">
+                  <template #default="scope">
+                    <el-tooltip content="预览" placement="top">
+                      <el-button type="primary" link size="small" @click="previewVideoHandler(scope.row.name)">
+                        <el-icon><View /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="下载" placement="top">
+                      <el-button type="success" link size="small" @click="downloadVideoHandler(scope.row.name)">
+                        <el-icon><Download /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="删除" placement="top">
+                      <el-button type="danger" link size="small" @click="deleteVideoHandler(scope.row.name)">
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                    <el-tooltip content="详情" placement="top">
+                      <el-button type="info" link size="small" @click="showVideoDetail(scope.row)">
+                        <el-icon><InfoFilled /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <el-pagination
+              v-if="videoTotal > videoPageSize"
+              style="margin: 8px 0 0 0; text-align: right;"
+              background
+              layout="prev, pager, next, jumper"
+              :total="videoTotal"
+              :page-size="videoPageSize"
+              :current-page.sync="videoPage"
+              @current-change="handleVideoPageChange"
+              :hide-on-single-page="true"
+            />
           </div>
         </div>
       </div>
@@ -429,6 +588,77 @@ onUnmounted(() => {
     <!-- 视频预览对话框 -->
     <el-dialog v-model="videoPreviewVisible" title="视频预览" width="80%" :before-close="() => videoPreviewVisible = false">
       <video v-if="videoPreviewUrl" :src="videoPreviewUrl" controls style="width: 100%; max-height: 500px;"></video>
+    </el-dialog>
+
+    <!-- 文件详情弹窗 -->
+    <el-dialog v-model="fileDetailVisible" title="文件详情" width="400px">
+      <div class="detail-item">
+        <span class="detail-label">文件名：</span>
+        <span class="detail-value">{{ fileDetail.name }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">大小：</span>
+        <span class="detail-value">{{ formatSize(fileDetail.size) }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">修改时间：</span>
+        <span class="detail-value">{{ formatDate(fileDetail.modified) }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">上传IP：</span>
+        <div class="ip-section">
+          <span class="ip-address">{{ fileDetail.ip || '未知' }}</span>
+          <el-button type="primary" size="small" @click="copyIp(fileDetail.ip)" :disabled="!fileDetail.ip">
+            <el-icon><Download /></el-icon>复制IP
+          </el-button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 视频详情弹窗 -->
+    <el-dialog v-model="videoDetailVisible" title="视频详情" width="400px">
+      <div class="detail-item">
+        <span class="detail-label">视频名：</span>
+        <span class="detail-value">{{ videoDetail.name }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">大小：</span>
+        <span class="detail-value">{{ formatSize(videoDetail.size) }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">修改时间：</span>
+        <span class="detail-value">{{ formatDate(videoDetail.modified) }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">上传IP：</span>
+        <div class="ip-section">
+          <span class="ip-address">{{ videoDetail.ip || '未知' }}</span>
+          <el-button type="primary" size="small" @click="copyIp(videoDetail.ip)" :disabled="!videoDetail.ip">
+            <el-icon><Download /></el-icon>复制IP
+          </el-button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 消息详情弹窗 -->
+    <el-dialog v-model="msgDetailVisible" title="消息详情" width="400px">
+      <div class="detail-item">
+        <span class="detail-label">内容：</span>
+        <div class="detail-value message-content">{{ msgDetail.text }}</div>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">时间：</span>
+        <span class="detail-value">{{ new Date(msgDetail.timestamp).toLocaleString('zh-CN') }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">发送IP：</span>
+        <div class="ip-section">
+          <span class="ip-address">{{ msgDetail.ip || '未知' }}</span>
+          <el-button type="primary" size="small" @click="copyIp(msgDetail.ip)" :disabled="!msgDetail.ip">
+            <el-icon><Download /></el-icon>复制IP
+          </el-button>
+        </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -618,6 +848,24 @@ onUnmounted(() => {
   width: 100%;
 }
 
+.local-url-bar {
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin: 12px 0 16px 0;
+  padding: 10px 18px;
+  font-size: 15px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  width: fit-content;
+}
+.local-url {
+  font-weight: bold;
+  color: #3b82f6;
+  margin-left: 4px;
+}
+
 @media (max-width: 768px) {
   .module-body {
     grid-template-columns: 1fr;
@@ -631,5 +879,89 @@ onUnmounted(() => {
     flex-direction: column;
     text-align: center;
   }
+}
+
+.table-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.ellipsis {
+  display: inline-block;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.el-table .el-button + .el-button {
+  margin-left: 4px;
+}
+.el-table .el-button[link][type="danger"] {
+  color: #e74c3c;
+}
+.el-table .el-button[link][type="success"] {
+  color: #27ae60;
+}
+.el-table .el-button[link][type="primary"] {
+  color: #2563eb;
+}
+
+.selected-file-name {
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  color: #2563eb;
+  word-break: break-all;
+}
+.selected-file-name.empty {
+  color: #aaa;
+}
+
+.detail-item {
+  margin-bottom: 12px;
+}
+
+.detail-label {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-right: 8px;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.detail-value {
+  color: #6c757d;
+}
+
+.message-content {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.ip-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ip-address {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #dbeafe;
+  font-size: 14px;
 }
 </style>

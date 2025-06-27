@@ -1,17 +1,55 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 import os
 from werkzeug.utils import secure_filename
+import json
+import socket
 
 file_bp = Blueprint('file', __name__)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads')
 ALLOWED_FILE_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'md', 'zip', 'rar', '7z', 'csv', 'xlsx', 'docx', 'pptx'])
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+FILE_INFO_PATH = os.path.join(os.path.dirname(__file__), '..', 'file_info.json')
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_FILE_EXTENSIONS
+
+def save_file_ip(filename, ip):
+    try:
+        if os.path.exists(FILE_INFO_PATH):
+            with open(FILE_INFO_PATH, 'r', encoding='utf-8') as f:
+                info = json.load(f)
+        else:
+            info = {}
+        info[filename] = ip
+        with open(FILE_INFO_PATH, 'w', encoding='utf-8') as f:
+            json.dump(info, f, ensure_ascii=False)
+    except Exception as e:
+        print('保存文件IP失败', e)
+
+def get_file_ip(filename):
+    try:
+        if os.path.exists(FILE_INFO_PATH):
+            with open(FILE_INFO_PATH, 'r', encoding='utf-8') as f:
+                info = json.load(f)
+            return info.get(filename, '')
+        return ''
+    except:
+        return ''
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # 连接到一个不存在的外部地址，系统会自动选用本机的内网IP
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
 
 @file_bp.route('/upload', methods=['POST'])
 def upload_file():
@@ -48,10 +86,20 @@ def upload_file():
         
         file.save(file_path)
         
+        # 记录IP
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip and ',' in ip:
+            ip = ip.split(',')[0].strip()
+        # 新增：本机访问时自动获取内网IP
+        if ip == '127.0.0.1':
+            ip = get_local_ip()
+        save_file_ip(filename, ip)
+        
         return jsonify({
             'message': '文件上传成功',
             'filename': filename,
-            'size': file_size
+            'size': file_size,
+            'ip': ip
         })
     
     except Exception as e:
@@ -65,10 +113,17 @@ def list_files():
             file_path = os.path.join(UPLOAD_FOLDER, filename)
             if os.path.isfile(file_path):
                 file_stat = os.stat(file_path)
+                ip = get_file_ip(filename)
+                if ip and ',' in ip:
+                    ip = ip.split(',')[0].strip()
+                # 新增：本机访问时自动获取内网IP
+                if ip == '127.0.0.1':
+                    ip = get_local_ip()
                 files.append({
                     'name': filename,
                     'size': file_stat.st_size,
-                    'modified': file_stat.st_mtime
+                    'modified': file_stat.st_mtime,
+                    'ip': ip
                 })
         
         # 按修改时间排序，最新的在前

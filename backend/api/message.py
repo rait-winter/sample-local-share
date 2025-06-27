@@ -18,9 +18,11 @@ def load_history():
 
 def save_history(message):
     history = load_history()
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     history.append({
         'text': message,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'ip': ip
     })
     # 只保留最近50条消息
     if len(history) > 50:

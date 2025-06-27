@@ -1,17 +1,54 @@
 from flask import Blueprint, request, jsonify, send_from_directory, send_file
 import os
 from werkzeug.utils import secure_filename
+import json
+import socket
 
 video_bp = Blueprint('video', __name__)
 VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'videos')
 ALLOWED_VIDEO_EXTENSIONS = set(['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm'])
 MAX_VIDEO_SIZE = 500 * 1024 * 1024  # 500MB
+VIDEO_INFO_PATH = os.path.join(os.path.dirname(__file__), '..', 'video_info.json')
 
 if not os.path.exists(VIDEO_FOLDER):
     os.makedirs(VIDEO_FOLDER)
 
 def allowed_video(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS
+
+def save_video_ip(filename, ip):
+    try:
+        if os.path.exists(VIDEO_INFO_PATH):
+            with open(VIDEO_INFO_PATH, 'r', encoding='utf-8') as f:
+                info = json.load(f)
+        else:
+            info = {}
+        info[filename] = ip
+        with open(VIDEO_INFO_PATH, 'w', encoding='utf-8') as f:
+            json.dump(info, f, ensure_ascii=False)
+    except Exception as e:
+        print('保存视频IP失败', e)
+
+def get_video_ip(filename):
+    try:
+        if os.path.exists(VIDEO_INFO_PATH):
+            with open(VIDEO_INFO_PATH, 'r', encoding='utf-8') as f:
+                info = json.load(f)
+            return info.get(filename, '')
+        return ''
+    except:
+        return ''
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
 
 @video_bp.route('/upload', methods=['POST'])
 def upload_video():
@@ -48,10 +85,19 @@ def upload_video():
         
         file.save(file_path)
         
+        # 记录IP
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip and ',' in ip:
+            ip = ip.split(',')[0].strip()
+        if ip == '127.0.0.1':
+            ip = get_local_ip()
+        save_video_ip(filename, ip)
+        
         return jsonify({
             'message': '视频上传成功',
             'filename': filename,
-            'size': file_size
+            'size': file_size,
+            'ip': ip
         })
     
     except Exception as e:
@@ -65,10 +111,16 @@ def list_videos():
             file_path = os.path.join(VIDEO_FOLDER, filename)
             if os.path.isfile(file_path):
                 file_stat = os.stat(file_path)
+                ip = get_video_ip(filename)
+                if ip and ',' in ip:
+                    ip = ip.split(',')[0].strip()
+                if ip == '127.0.0.1':
+                    ip = get_local_ip()
                 videos.append({
                     'name': filename,
                     'size': file_stat.st_size,
-                    'modified': file_stat.st_mtime
+                    'modified': file_stat.st_mtime,
+                    'ip': ip
                 })
         
         # 按修改时间排序，最新的在前
