@@ -1,412 +1,283 @@
 # API 文档
 
-本文档详细说明了内网共享工具的所有API接口。
+本项目后端API基于RESTful风格，所有接口均以 `/api/` 开头，返回JSON格式数据。
 
-## 基础信息
+---
 
-- **基础URL**: `http://localhost:8000`
-- **内容类型**: `application/json`
-- **字符编码**: `UTF-8`
-- **实时同步**: 前端采用轮询机制实现多终端同步
+## 消息相关
 
-## 消息API
-
-### 发送消息
-
-**POST** `/api/message/`
-
-发送新消息，同时保存到历史记录。
-
-**请求体:**
-```json
-{
-  "text": "要发送的消息内容"
-}
-```
-
-**响应:**
-```json
-{
-  "message": "消息保存成功",
-  "text": "要发送的消息内容",
-  "timestamp": "2024-01-01T12:00:00"
-}
-```
-
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
-
-### 获取当前消息
-
-**GET** `/api/message/`
-
-获取最新的一条消息。
-
-**响应:**
-```json
-{
-  "text": "当前消息内容"
-}
-```
-
-### 获取消息历史
-
-**GET** `/api/message/history`
-
-获取最近50条消息历史记录。
-
-**响应:**
-```json
-{
-  "history": [
+### 1. 获取消息历史
+- **接口**：`GET /api/message/history`
+- **描述**：获取最近50条消息
+- **请求参数**：无
+- **返回示例**：
+  ```json
+  [
     {
-      "text": "消息内容",
-      "timestamp": "2024-01-01T12:00:00"
+      "content": "hello",
+      "timestamp": "2024-06-01 12:00:00"
     }
   ]
-}
-```
+  ```
 
-## 文件API
+---
 
-### 上传文件
+### 2. 发送消息
+- **接口**：`POST /api/message/`
+- **描述**：发送一条新消息
+- **请求参数**（JSON）：
+  ```json
+  {
+    "content": "消息内容"
+  }
+  ```
+- **返回示例**：
+  ```json
+  {
+    "success": true
+  }
+  ```
 
-**POST** `/api/file/upload`
+---
 
-上传文件到服务器。
+## 文件相关
 
-**请求体:** `multipart/form-data`
-- `file`: 要上传的文件
-
-**支持的文件类型:**
-- 文档: `txt`, `pdf`, `md`, `csv`, `xlsx`, `docx`, `pptx`
-- 图片: `png`, `jpg`, `jpeg`, `gif`, `bmp`
-- 压缩: `zip`, `rar`, `7z`
-
-**文件大小限制:** 100MB
-
-**响应:**
-```json
-{
-  "message": "文件上传成功",
-  "filename": "文件名.ext",
-  "size": 1024
-}
-```
-
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
-
-### 获取文件列表
-
-**GET** `/api/file/list`
-
-获取所有已上传文件的列表。
-
-**响应:**
-```json
-{
-  "files": [
+### 1. 获取文件列表
+- **接口**：`GET /api/file/list`
+- **描述**：获取所有已上传文件信息
+- **请求参数**：无
+- **返回示例**：
+  ```json
+  [
     {
-      "name": "文件名.ext",
-      "size": 1024,
-      "modified": 1704067200
+      "name": "example.pdf",
+      "size": 123456,
+      "mtime": "2024-06-01 12:00:00"
     }
   ]
-}
-```
+  ```
 
-### 下载文件
+---
 
-**GET** `/api/file/download/<filename>`
+### 2. 上传文件
+- **接口**：`POST /api/file/upload`
+- **描述**：上传新文件（支持多种类型）
+- **请求参数**：`multipart/form-data`，字段名为 `file`
+- **返回示例**：
+  ```json
+  {
+    "success": true,
+    "filename": "example.pdf"
+  }
+  ```
 
-下载指定文件。
+---
 
-**参数:**
-- `filename`: 文件名（URL编码）
+### 3. 下载文件
+- **接口**：`GET /api/file/download/<filename>`
+- **描述**：下载指定文件
+- **请求参数**：URL路径参数
+- **返回**：文件流
 
-**响应:** 文件二进制流
+---
 
-**错误响应:**
-```json
-{
-  "error": "文件不存在"
-}
-```
+### 4. 删除文件
+- **接口**：`POST /api/file/delete`
+- **描述**：删除指定文件
+- **请求参数**（JSON）：
+  ```json
+  {
+    "name": "example.pdf"
+  }
+  ```
+- **返回示例**：
+  ```json
+  {
+    "success": true
+  }
+  ```
 
-### 预览文件
+---
 
-**GET** `/api/file/preview/<filename>`
+## 视频相关
 
-预览文件内容。
-
-**参数:**
-- `filename`: 文件名（URL编码）
-
-**支持预览的文件类型:**
-- 图片: `png`, `jpg`, `jpeg`, `gif`, `bmp` - 直接返回图片
-- 文本: `txt`, `md`, `csv` - 返回HTML格式的文本内容
-
-**响应:**
-- 图片文件: 图片二进制流
-- 文本文件: HTML格式的文本内容
-
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
-
-### 删除文件
-
-**DELETE** `/api/file/delete/<filename>`
-
-删除指定文件。
-
-**参数:**
-- `filename`: 文件名（URL编码）
-
-**响应:**
-```json
-{
-  "message": "文件删除成功"
-}
-```
-
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
-
-## 视频API
-
-### 上传视频
-
-**POST** `/api/video/upload`
-
-上传视频文件到服务器。
-
-**请求体:** `multipart/form-data`
-- `file`: 要上传的视频文件
-
-**支持的视频格式:**
-- `mp4`, `avi`, `mov`, `wmv`, `mkv`, `flv`, `webm`
-
-**文件大小限制:** 500MB
-
-**响应:**
-```json
-{
-  "message": "视频上传成功",
-  "filename": "视频名.mp4",
-  "size": 1024000
-}
-```
-
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
-
-### 获取视频列表
-
-**GET** `/api/video/list`
-
-获取所有已上传视频的列表。
-
-**响应:**
-```json
-{
-  "videos": [
+### 1. 获取视频列表
+- **接口**：`GET /api/video/list`
+- **描述**：获取所有已上传视频信息
+- **请求参数**：无
+- **返回示例**：
+  ```json
+  [
     {
-      "name": "视频名.mp4",
-      "size": 1024000,
-      "modified": 1704067200
+      "name": "demo.mp4",
+      "size": 12345678,
+      "mtime": "2024-06-01 12:00:00"
     }
   ]
-}
-```
+  ```
 
-### 下载视频
+---
 
-**GET** `/api/video/download/<filename>`
+### 2. 上传视频
+- **接口**：`POST /api/video/upload`
+- **描述**：上传新视频
+- **请求参数**：`multipart/form-data`，字段名为 `file`
+- **返回示例**：
+  ```json
+  {
+    "success": true,
+    "filename": "demo.mp4"
+  }
+  ```
 
-下载指定视频文件。
+---
 
-**参数:**
-- `filename`: 视频文件名（URL编码）
+### 3. 下载视频
+- **接口**：`GET /api/video/download/<filename>`
+- **描述**：下载指定视频
+- **请求参数**：URL路径参数
+- **返回**：文件流
 
-**响应:** 视频文件二进制流
+---
 
-**错误响应:**
-```json
-{
-  "error": "视频文件不存在"
-}
-```
+### 4. 删除视频
+- **接口**：`POST /api/video/delete`
+- **描述**：删除指定视频
+- **请求参数**（JSON）：
+  ```json
+  {
+    "name": "demo.mp4"
+  }
+  ```
+- **返回示例**：
+  ```json
+  {
+    "success": true
+  }
+  ```
 
-### 预览视频
+---
 
-**GET** `/api/video/preview/<filename>`
+## 配置相关
 
-在线预览视频。
+### 获取配置信息
+- **接口**：`GET /api/config`
+- **描述**：获取应用配置信息
+- **请求参数**：无
+- **返回示例**：
+  ```json
+  {
+    "app_name": "内网文件共享工具",
+    "company_name": "内部共享系统",
+    "version": "1.0.0",
+    "description": "便捷的内网文件、视频和消息共享工具",
+    "share_url": "http://192.168.1.100:5000",
+    "frontend_url": "http://192.168.1.100:实际端口"
+  }
+  ```
 
-**参数:**
-- `filename`: 视频文件名（URL编码）
+---
 
-**响应:** 视频文件二进制流（支持HTML5 video标签播放）
+## 通用返回格式
 
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
+- 成功：
+  ```json
+  { "success": true, ... }
+  ```
+- 失败：
+  ```json
+  { "success": false, "error": "错误信息" }
+  ```
 
-### 删除视频
+---
 
-**DELETE** `/api/video/delete/<filename>`
+## 说明
 
-删除指定视频文件。
+- 所有接口均支持跨域（CORS）。
+- 上传/下载接口需配合前端表单或工具（如curl、Postman）使用。
+- 文件/视频大小、类型等限制详见后端配置。
 
-**参数:**
-- `filename`: 视频文件名（URL编码）
+---
 
-**响应:**
-```json
-{
-  "message": "视频删除成功"
-}
-```
+## 示例代码
 
-**错误响应:**
-```json
-{
-  "error": "错误信息"
-}
-```
-
-## 实时同步机制
-
-前端采用轮询机制实现多终端实时同步：
-
-- **消息同步**: 每5秒自动调用 `/api/message/` 和 `/api/message/history`
-- **文件同步**: 每10秒自动调用 `/api/file/list`
-- **视频同步**: 每10秒自动调用 `/api/video/list`
-
-所有操作（发送消息、上传文件、删除文件等）都会立即触发刷新，确保数据实时性。
-
-## 错误响应
-
-所有API在发生错误时都会返回以下格式的响应：
-
-```json
-{
-  "error": "错误描述信息"
-}
-```
-
-**常见HTTP状态码:**
-- `200`: 成功
-- `400`: 请求参数错误
-- `404`: 资源不存在
-- `500`: 服务器内部错误
-
-## 使用示例
-
-### JavaScript/TypeScript
-
-```javascript
+### JavaScript/TypeScript (fetch)
+```js
 // 发送消息
-const response = await fetch('/api/message/', {
+await fetch('/api/message/', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ text: 'Hello World' })
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ content: 'Hello World' })
 });
 
 // 上传文件
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
-const response = await fetch('/api/file/upload', {
-  method: 'POST',
-  body: formData
-});
+await fetch('/api/file/upload', { method: 'POST', body: formData });
 
 // 获取文件列表
-const response = await fetch('/api/file/list');
-const data = await response.json();
+const res = await fetch('/api/file/list');
+const files = await res.json();
 ```
 
-### Python
-
+### Python (requests)
 ```python
 import requests
 
 # 发送消息
-response = requests.post('http://localhost:8000/api/message/', 
-                        json={'text': 'Hello World'})
+requests.post('http://localhost:5000/api/message/', json={'content': 'Hello World'})
 
 # 上传文件
 with open('file.txt', 'rb') as f:
-    response = requests.post('http://localhost:8000/api/file/upload',
-                           files={'file': f})
+    requests.post('http://localhost:5000/api/file/upload', files={'file': f})
 
 # 获取文件列表
-response = requests.get('http://localhost:8000/api/file/list')
-files = response.json()['files']
+files = requests.get('http://localhost:5000/api/file/list').json()
 ```
 
 ### cURL
-
 ```bash
 # 发送消息
-curl -X POST http://localhost:8000/api/message/ \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Hello World"}'
+curl -X POST http://localhost:5000/api/message/ -H "Content-Type: application/json" -d '{"content": "Hello World"}'
 
 # 上传文件
-curl -X POST http://localhost:8000/api/file/upload \
-  -F "file=@/path/to/file.txt"
+curl -X POST http://localhost:5000/api/file/upload -F "file=@/path/to/file.txt"
 
 # 获取文件列表
-curl http://localhost:8000/api/file/list
+curl http://localhost:5000/api/file/list
 ```
 
-## 注意事项
+---
 
-1. **文件大小限制**: 单个文件最大100MB，视频最大500MB
-2. **文件名安全**: 上传的文件名会被自动清理，移除特殊字符
-3. **重复文件**: 如果上传同名文件，会自动添加数字后缀
-4. **编码问题**: 所有文本内容使用UTF-8编码
-5. **跨域支持**: API已配置CORS，支持跨域请求
-6. **实时同步**: 前端轮询机制确保多终端数据同步
+## 常见问题（FAQ）
 
-## 版本历史
+**Q1：为什么上传大文件失败？**  
+A：请检查后端 `config.json` 的 `max_file_size` 配置，默认100MB。前端和后端都有限制，超出会被拒绝。
 
-### v1.1.0 (最新)
-- ✅ 新增文件预览功能
-- ✅ 新增文件删除功能
-- ✅ 新增视频预览功能
-- ✅ 新增视频删除功能
-- ✅ 新增消息历史功能
-- ✅ 优化错误处理和响应
+**Q2：前端页面无法访问/端口不一致？**  
+A：请确保前端启动后端口已同步到后端（如有端口写入机制），并检查防火墙设置。
+
+**Q3：API跨域报错？**  
+A：后端已启用CORS，若仍有问题请检查浏览器缓存或代理配置。
+
+**Q4：如何自定义上传/视频/消息的保留数量？**  
+A：可在 `backend/config.json` 中调整相关配置项。
+
+**Q5：如何在局域网其他设备访问？**  
+A：请用后端启动台输出的"前端界面地址"，并确保防火墙已放行对应端口。
+
+---
+
+## 接口变更历史
+
+### v1.1.0
+- 新增：文件/视频删除接口
+- 新增：文件/视频预览接口
+- 优化：API返回格式统一，错误处理更友好
 
 ### v1.0.0
-- ✅ 基础消息、文件、视频管理功能
-- ✅ 实时同步机制
-- ✅ 基础API接口 
+- 初始版本，支持消息、文件、视频的上传、下载、历史、同步等基础功能
+
+---
+
+如需更详细的开发示例或遇到特殊问题，欢迎提交 Issue 或查阅源码！ 

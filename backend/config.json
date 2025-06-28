@@ -1,0 +1,29 @@
+{
+  "app_name": "内网文件共享工具",
+  "company_name": "内部共享系统",
+  "version": "1.0.0",
+  "description": "便捷的内网文件、视频和消息共享工具",
+  "icon_path": "",
+  "auto_start": true,
+  "show_startup_info": true,
+  "backend_port": 5000,
+  "frontend_port": 5173,
+  "max_file_size": 104857600,
+  "allowed_extensions": [
+    ".txt",
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".mp4",
+    ".avi",
+    ".mov"
+  ],
+  "upload_folder": "uploads",
+  "video_folder": "videos"
+}

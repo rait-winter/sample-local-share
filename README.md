@@ -1,5 +1,10 @@
 # 内网共享工具
 
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](../../pulls)
+[![Issues](https://img.shields.io/github/issues/rait-winter/sample-local-share.svg)](../../issues)
+[![Stars](https://img.shields.io/github/stars/rait-winter/sample-local-share.svg)](../../stargazers)
+
 一个基于Python Flask后端和Vue3前端的局域网文件、消息、视频共享工具，支持多终端实时同步。
 
 ## ✨ 功能特性
@@ -58,9 +63,9 @@ npm run dev
 ```
 
 ### 访问地址
-- 前端界面：http://localhost:5173
+- 前端界面：默认端口为随机分配（10000~65535），请以实际启动端口为准，如 http://localhost:12345
 - 后端API：http://localhost:8000
-- 内网访问：http://[你的IP]:5173
+- 内网访问：如 http://[你的IP]:12345（端口为实际启动端口）
 
 ## 📁 项目结构
 
@@ -188,4 +193,51 @@ MIT License
 
 ---
 
-如有更多问题请查阅源码注释或联系维护者。 
+如有更多问题请查阅源码注释或联系维护者。
+
+## 🗂️ 目录结构说明
+- `backend/uploads/`、`backend/videos/` 目录为上传/视频存储目录，已添加 `.gitkeep` 文件保证空目录在GitHub可见。
+- 仅保留核心源码、配置、文档，所有临时、历史、产物、依赖等文件已清理。
+
+## 📄 开源协议
+本项目采用 MIT License，详见 LICENSE 文件。
+
+## 🤝 贡献指南
+欢迎任何形式的贡献！请先 Fork 项目，创建分支后提交 Pull Request。
+
+## 📝 其他说明
+如有建议或问题，请通过 Issue 联系维护者。
+
+## 📖 API 文档（简要示例）
+
+### 消息相关
+- `GET /api/message/history`  获取消息历史
+  **返回：**
+  ```json
+  [
+    {"content": "hello", "timestamp": "2024-06-01 12:00:00"}
+  ]
+  ```
+- `POST /api/message/`  发送消息
+  **参数：**
+  ```json
+  { "content": "hello" }
+  ```
+  **返回：**
+  ```json
+  { "success": true }
+  ```
+
+### 文件相关
+- `GET /api/file/list`  获取文件列表
+- `POST /api/file/upload`  上传文件（form-data）
+- `GET /api/file/download/<filename>`  下载文件
+
+### 视频相关
+- `GET /api/video/list`  获取视频列表
+- `POST /api/video/upload`  上传视频（form-data）
+- `GET /api/video/download/<filename>`  下载视频
+
+> 更多详细参数和返回格式请见 [docs/API文档.md](docs/API文档.md)
+
+--- 
