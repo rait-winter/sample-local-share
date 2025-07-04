@@ -2,7 +2,7 @@
 // 文件相关API封装，提供文件上传、列表、下载、预览、删除、最大数量设置等方法
 // 用于前端与后端文件API交互
 
-import axios from 'axios';
+import apiClient from './config';
 
 export interface FileInfo {
   name: string;
@@ -18,7 +18,11 @@ export interface FileInfo {
 export function uploadFile(file: File) {
   const formData = new FormData();
   formData.append('file', file);
-  return axios.post('/api/file/upload', formData);
+  return apiClient.post('/api/file/upload', formData, {
+    headers: {
+      'Content-Type': undefined // 让axios自动设置multipart/form-data
+    }
+  });
 }
 
 /**
@@ -26,7 +30,7 @@ export function uploadFile(file: File) {
  * @returns Promise<AxiosResponse<{files: any[]}>>
  */
 export function listFiles() {
-  return axios.get<{files: FileInfo[]}>('/api/file/list');
+  return apiClient.get<{files: FileInfo[]}>('/api/file/list');
 }
 
 /**
@@ -53,5 +57,5 @@ export function previewFile(name: string) {
  * @returns Promise<AxiosResponse>
  */
 export function deleteFile(name: string) {
-  return axios.delete(`/api/file/delete/${encodeURIComponent(name)}`);
+  return apiClient.delete(`/api/file/delete/${encodeURIComponent(name)}`);
 } 

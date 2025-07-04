@@ -2,7 +2,7 @@
 // 视频相关API封装，提供视频上传、列表、下载、预览、删除、最大数量设置等方法
 // 用于前端与后端视频API交互
 
-import axios from 'axios';
+import apiClient from './config';
 
 export interface VideoInfo {
   name: string;
@@ -18,7 +18,7 @@ export interface VideoInfo {
 export function uploadVideo(file: File) {
   const formData = new FormData();
   formData.append('file', file);
-  return axios.post('/api/video/upload', formData);
+  return apiClient.post('/api/video/upload', formData);
 }
 
 /**
@@ -26,7 +26,7 @@ export function uploadVideo(file: File) {
  * @returns Promise<AxiosResponse<{videos: any[]}>>
  */
 export function listVideos() {
-  return axios.get<{videos: VideoInfo[]}>('/api/video/list');
+  return apiClient.get<{videos: VideoInfo[]}>('/api/video/list');
 }
 
 /**
@@ -53,5 +53,5 @@ export function previewVideo(name: string) {
  * @returns Promise<AxiosResponse>
  */
 export function deleteVideo(name: string) {
-  return axios.delete(`/api/video/delete/${encodeURIComponent(name)}`);
+  return apiClient.delete(`/api/video/delete/${encodeURIComponent(name)}`);
 } 

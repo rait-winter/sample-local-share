@@ -175,29 +175,35 @@ def download_file(filename):
 @file_bp.route('/preview/<filename>', methods=['GET'])
 def preview_file(filename):
     """
-    预览文件内容。支持图片/文本类型。
+    预览文件内容。支持图片/文本/音频类型。
     参数: filename - 文件名
-    返回: 图片流或HTML文本
+    返回: 图片/音频流或HTML文本
     """
     try:
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         if not os.path.exists(file_path):
             return jsonify({'error': '文件不存在'}), 404
-        
         ext = filename.rsplit('.', 1)[-1].lower()
-        
-        if ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp']:
+        # 图片+pdf
+        if ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'pdf']:
             return send_from_directory(UPLOAD_FOLDER, filename)
-        elif ext in ['txt', 'md', 'csv']:
+        # 音频
+        elif ext in ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma']:
+            return send_from_directory(UPLOAD_FOLDER, filename)
+        # 文本/代码
+        elif ext in ['txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml', 'ini', 'log', 'conf', 'config',
+                     'js', 'ts', 'jsx', 'tsx', 'css', 'scss', 'less', 'html', 'htm', 'vue', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'sql', 'sh', 'bat', 'ps1', 'dockerfile', 'toml']:
             try:
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
                 return f'<pre style="white-space:pre-wrap;word-break:break-all;">{content}</pre>'
             except UnicodeDecodeError:
                 return '文件编码不支持预览', 400
+        # 压缩包
+        elif ext in ['zip', 'rar', '7z']:
+            return '<div style="padding:32px;font-size:18px;">压缩包文件，请下载后解压查看内容。<br>支持格式：ZIP、RAR、7Z</div>'
         else:
             return '不支持预览此类型文件', 400
-    
     except Exception as e:
         return jsonify({'error': f'预览失败: {str(e)}'}), 500
 

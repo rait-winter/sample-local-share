@@ -2,7 +2,7 @@
 // 消息相关API封装，提供发送消息、获取当前消息、获取历史消息等方法
 // 用于前端与后端消息API交互
 
-import axios from 'axios';
+import apiClient from './config';
 
 export interface MessageHistory {
   text: string;
@@ -15,7 +15,7 @@ export interface MessageHistory {
  * @returns Promise<AxiosResponse>
  */
 export function sendMessage(text: string) {
-  return axios.post('/api/message/', { text });
+  return apiClient.post('/api/message/', { text });
 }
 
 /**
@@ -23,7 +23,7 @@ export function sendMessage(text: string) {
  * @returns Promise<AxiosResponse<{text: string}>>
  */
 export function getMessage() {
-  return axios.get<{text: string}>('/api/message/');
+  return apiClient.get<{text: string}>('/api/message/');
 }
 
 /**
@@ -31,5 +31,5 @@ export function getMessage() {
  * @returns Promise<AxiosResponse<{history: any[]}>>
  */
 export function getMessageHistory() {
-  return axios.get<{history: MessageHistory[]}>('/api/message/history');
+  return apiClient.get<{history: MessageHistory[]}>('/api/message/history');
 } 

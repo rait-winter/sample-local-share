@@ -67,6 +67,7 @@ const fileList = ref<Array<{name: string, size: number, modified: number}>>([])
 const filePreviewVisible = ref(false)
 const filePreviewUrl = ref('')
 const filePreviewContent = ref('')
+const filePreviewType = ref('')
 
 // 文件分页
 const filePage = ref(1)
@@ -112,15 +113,42 @@ const downloadFileHandler = (name: string) => {
 
 const previewFileHandler = async (name: string) => {
   try {
-    if (name.match(/\.(png|jpg|jpeg|gif|bmp)$/i)) {
+    if (name.match(/\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i)) {
       filePreviewUrl.value = previewFile(name)
       filePreviewContent.value = ''
-    } else if (name.match(/\.(txt|md|csv)$/i)) {
+      filePreviewType.value = 'image'
+    } else if (name.match(/\.(txt|md|csv|json|xml|yaml|yml|ini|log|conf|config)$/i)) {
       const response = await fetch(previewFile(name))
       filePreviewContent.value = await response.text()
       filePreviewUrl.value = ''
+      filePreviewType.value = 'text'
+    } else if (name.match(/\.(js|ts|jsx|tsx|css|scss|less|html|htm|vue|py|java|c|cpp|h|hpp|php|rb|go|rs|swift|kt|scala|sql|sh|bat|ps1|dockerfile|yaml|yml|toml|ini|conf|config|log)$/i)) {
+      const response = await fetch(previewFile(name))
+      filePreviewContent.value = await response.text()
+      filePreviewUrl.value = ''
+      filePreviewType.value = 'code'
+    } else if (name.match(/\.(pdf)$/i)) {
+      filePreviewUrl.value = previewFile(name)
+      filePreviewContent.value = ''
+      filePreviewType.value = 'pdf'
+    } else if (name.match(/\.(docx|xlsx|pptx|doc|xls|ppt)$/i)) {
+      // 使用微软Office在线预览
+      const url = window.location.origin + previewFile(name)
+      filePreviewUrl.value = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`
+      filePreviewContent.value = ''
+      filePreviewType.value = 'office'
+    } else if (name.match(/\.(zip|rar|7z)$/i)) {
+      // 压缩包预览（显示文件列表）
+      filePreviewContent.value = '压缩包文件，请下载后解压查看内容。\n\n支持格式：ZIP、RAR、7Z'
+      filePreviewUrl.value = ''
+      filePreviewType.value = 'archive'
+    } else if (name.match(/\.(mp3|wav|flac|aac|ogg|wma)$/i)) {
+      // 音频文件预览
+      filePreviewUrl.value = previewFile(name)
+      filePreviewContent.value = ''
+      filePreviewType.value = 'audio'
     } else {
-      ElMessage.warning('不支持预览此类型文件')
+      ElMessage.warning('不支持预览此类型文件，请下载后查看')
       return
     }
     filePreviewVisible.value = true
@@ -622,11 +650,31 @@ onUnmounted(() => {
 
     <!-- 文件预览对话框 -->
     <el-dialog v-model="filePreviewVisible" title="文件预览" width="80%" :before-close="() => filePreviewVisible = false">
-      <div v-if="filePreviewUrl" class="preview-image">
+      <div v-if="filePreviewType === 'image' && filePreviewUrl" class="preview-image">
         <img :src="filePreviewUrl" style="max-width: 100%; height: auto;" />
       </div>
-      <div v-else-if="filePreviewContent" class="preview-text">
+      <div v-else-if="filePreviewType === 'text' && filePreviewContent" class="preview-text">
         <pre style="white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto;">{{ filePreviewContent }}</pre>
+      </div>
+      <div v-else-if="filePreviewType === 'code' && filePreviewContent" class="preview-code">
+        <pre style="white-space: pre-wrap; word-break: break-all; max-height: 500px; overflow-y: auto; background: #f8f9fa; padding: 16px; border-radius: 8px; border: 1px solid #e9ecef; font-family: 'Courier New', monospace; font-size: 14px;">{{ filePreviewContent }}</pre>
+      </div>
+      <div v-else-if="filePreviewType === 'pdf' && filePreviewUrl" class="preview-pdf">
+        <iframe :src="filePreviewUrl" style="width:100%;height:600px;border:none;"></iframe>
+      </div>
+      <div v-else-if="filePreviewType === 'office' && filePreviewUrl" class="preview-office">
+        <iframe :src="filePreviewUrl" style="width:100%;height:600px;border:none;"></iframe>
+      </div>
+      <div v-else-if="filePreviewType === 'archive' && filePreviewContent" class="preview-archive">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; text-align: center;">
+          <pre style="white-space: pre-wrap; word-break: break-all; margin: 0; font-size: 16px;">{{ filePreviewContent }}</pre>
+        </div>
+      </div>
+      <div v-else-if="filePreviewType === 'audio' && filePreviewUrl" class="preview-audio">
+        <audio :src="filePreviewUrl" controls style="width: 100%; max-width: 500px; margin: 0 auto; display: block;"></audio>
+      </div>
+      <div v-else class="preview-unsupported">
+        <span>无法预览该文件类型，请下载后查看。</span>
       </div>
     </el-dialog>
 
