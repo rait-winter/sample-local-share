@@ -186,10 +186,10 @@ def preview_file(filename):
         ext = filename.rsplit('.', 1)[-1].lower()
         # 图片+pdf
         if ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'pdf']:
-            return send_from_directory(UPLOAD_FOLDER, filename)
+            return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=False)
         # 音频
         elif ext in ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma']:
-            return send_from_directory(UPLOAD_FOLDER, filename)
+            return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=False)
         # 文本/代码
         elif ext in ['txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml', 'ini', 'log', 'conf', 'config',
                      'js', 'ts', 'jsx', 'tsx', 'css', 'scss', 'less', 'html', 'htm', 'vue', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'sql', 'sh', 'bat', 'ps1', 'dockerfile', 'toml']:

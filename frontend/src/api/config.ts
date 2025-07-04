@@ -12,10 +12,7 @@ import axios from 'axios';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: 30000
 });
 
 apiClient.interceptors.request.use(

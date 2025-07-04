@@ -10,6 +10,7 @@ import socket
 from api.message import message_bp
 from api.file import file_bp
 from api.video import video_bp
+import sys
 
 # 日志配置
 def setup_logging(log_path):
@@ -37,7 +38,11 @@ def get_lan_ip():
 # 用于WSGI服务器或直接运行
 
 def create_app():
-    app = Flask(__name__, static_folder='../frontend/dist', static_url_path='')
+    if hasattr(sys, '_MEIPASS'):
+        static_folder = os.path.join(sys._MEIPASS, 'dist')
+    else:
+        static_folder = os.path.join(os.path.dirname(__file__), 'dist')
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
     # 启用跨域支持，允许前端跨域访问API
     CORS(app)
     # 注册消息、文件、视频API蓝图
@@ -58,10 +63,10 @@ def create_app():
 
 if __name__ == '__main__':
     setup_logging('backend.log')
-    app = create_app()
     port = random.randint(10000, 65535)
+    app = create_app()
     # 写入端口号到前端dist目录
-    dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/dist'))
+    dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'dist'))
     try:
         os.makedirs(dist_dir, exist_ok=True)
         with open(os.path.join(dist_dir, 'port.txt'), 'w', encoding='utf-8') as f:
@@ -76,5 +81,5 @@ if __name__ == '__main__':
         try:
             webbrowser.open(url)
         except Exception as e:
-                logging.warning(f"[警告] 自动打开浏览器失败: {e}")
+            logging.warning(f"[警告] 自动打开浏览器失败: {e}")
     app.run(host='0.0.0.0', port=port, debug=True) 

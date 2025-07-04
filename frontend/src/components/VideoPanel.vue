@@ -15,8 +15,12 @@ emit: 支持操作反馈、刷新等事件
     </div>
     
     <div v-if="uploading" class="upload-status">
-      正在上传...
+      <div>正在上传... {{ uploadProgress }}%</div>
+      <div style="background:#eee;width:200px;height:8px;border-radius:4px;overflow:hidden;margin:4px 0;">
+        <div :style="{width: uploadProgress + '%', height: '100%', background: '#4caf50', transition: 'width 0.2s'}"></div>
+      </div>
     </div>
+    <div v-if="uploadMessage" :style="{color: uploadMessage.includes('成功') ? 'green' : 'red', marginBottom: '8px'}">{{ uploadMessage }}</div>
     
     <h3 style="margin-top:16px;">视频列表</h3>
     <div v-if="videos.length === 0" class="empty-state">
@@ -48,13 +52,15 @@ emit: 支持操作反馈、刷新等事件
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { uploadVideo, listVideos, downloadVideo, previewVideo, deleteVideo, type VideoInfo } from '../api/video'
+import { listVideos, downloadVideo, previewVideo, deleteVideo, type VideoInfo } from '../api/video'
 
 const videos = ref<VideoInfo[]>([])
 const fileObj = ref<File | null>(null)
 const videoInput = ref<HTMLInputElement>()
 const previewUrl = ref('')
 const uploading = ref(false)
+const uploadProgress = ref(0)
+const uploadMessage = ref('')
 let pollInterval: number | null = null
 
 function onFileChange(e: Event) {
@@ -70,17 +76,46 @@ function clearFile() {
 }
 
 async function upload() {
-  if (!fileObj.value) return
-  
+  if (!fileObj.value) {
+    alert('请先选择要上传的视频文件！')
+    return
+  }
   uploading.value = true
+  uploadProgress.value = 0
+  uploadMessage.value = ''
   try {
-    await uploadVideo(fileObj.value)
-    clearFile()
+    await new Promise<void>((resolve, reject) => {
+      const formData = new FormData()
+      formData.append('file', fileObj.value as File)
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', '/api/video/upload', true)
+      xhr.upload.onprogress = function (event) {
+        if (event.lengthComputable) {
+          uploadProgress.value = Math.round((event.loaded / event.total) * 100)
+        }
+      }
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          uploadMessage.value = '上传成功'
+          resolve()
+        } else {
+          uploadMessage.value = '上传失败: ' + (xhr.responseText || xhr.status)
+          reject(new Error(uploadMessage.value))
+        }
+      }
+      xhr.onerror = function () {
+        uploadMessage.value = '上传失败'
+        reject(new Error('上传失败'))
+      }
+      xhr.send(formData)
+    })
     await load()
+    clearFile()
   } catch (error: any) {
-    alert('上传失败: ' + (error.response?.data?.error || error.message))
+    alert('上传失败: ' + (error.message || error))
   } finally {
     uploading.value = false
+    setTimeout(() => { uploadProgress.value = 0; uploadMessage.value = '' }, 1500)
   }
 }
 
