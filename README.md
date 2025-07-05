@@ -1,17 +1,18 @@
-# 内网共享工具
+# 内网文件消息共享工具
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](../../pulls)
 [![Issues](https://img.shields.io/github/issues/rait-winter/sample-local-share.svg)](../../issues)
 [![Stars](https://img.shields.io/github/stars/rait-winter/sample-local-share.svg)](../../stargazers)
 
-一个基于Python Flask后端和Vue3前端的局域网文件、消息、视频共享工具，支持多终端实时同步。
+一个基于Python Flask后端和Vue3前端的局域网文件、消息、视频共享工具，支持多终端实时同步，支持一键打包为Windows安装包。
 
 ## ✨ 核心特性
-- 一体化启动，前后端同端口，自动分配随机五位数端口
+- 一体化启动，前后端同端口，自动分配随机端口
 - 局域网自动获取本机IP，便于多端访问
 - 消息、文件、视频上传/下载/预览/删除，实时同步
 - 日志自动写入项目根目录 backend.log，便于排查
+- 支持打包为可安装exe，桌面快捷方式一键启动
 - 代码结构清晰，文档完善，易于维护
 
 ## 🚀 快速开始
@@ -21,7 +22,7 @@
 - Node.js 16.9.0+
 - 现代浏览器
 
-### 一体化启动（推荐/唯一方式）
+### 一体化启动
 ```bash
 # 双击运行
 start_unified.bat
@@ -45,8 +46,15 @@ project/
 ├── docs/                   # 项目文档
 ├── start_unified.bat       # 一体化启动脚本
 ├── backend.log             # 后端日志
+├── installer.nsi           # NSIS安装包脚本
 └── README.md               # 项目说明
 ```
+
+## 📦 打包成可安装exe（简要）
+- 前端打包：`cd frontend && npm install && npm run build`
+- 后端打包：`cd backend && pip install -r requirements.txt && pyinstaller --onefile --add-data "dist;dist" app.py`
+- NSIS打包：用NSIS编译installer.nsi，生成安装包
+- 详细流程见 [docs/Windows一键打包与安装指南.md](docs/Windows一键打包与安装指南.md)
 
 ## 📖 详细文档
 - [一体化启动说明](docs/一体化启动说明.md)
@@ -59,7 +67,7 @@ project/
 ## 📝 常见问题
 - 启动后未弹出页面？请检查Python/Node环境，或手动访问控制台提示的局域网地址
 - 日志文件未生成？请确认有写入权限，或检查backend.log是否在根目录
-- 其他问题请查阅FAQ或日志文件
+- 打包/安装问题请查阅[打包与安装指南](docs/Windows一键打包与安装指南.md)
 
 ## 🤝 贡献指南
 欢迎任何形式的贡献！Fork项目、创建分支、提交PR。

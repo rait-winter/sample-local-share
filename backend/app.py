@@ -63,10 +63,10 @@ def create_app():
 
 if __name__ == '__main__':
     setup_logging('backend.log')
-    port = random.randint(10000, 65535)
     app = create_app()
+    port = random.randint(10000, 65535)
     # 写入端口号到前端dist目录
-    dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'dist'))
+    dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/dist'))
     try:
         os.makedirs(dist_dir, exist_ok=True)
         with open(os.path.join(dist_dir, 'port.txt'), 'w', encoding='utf-8') as f:
@@ -75,9 +75,9 @@ if __name__ == '__main__':
         logging.warning(f"[警告] 端口写入port.txt失败: {e}")
     lan_ip = get_lan_ip()
     url = f"http://{lan_ip}:{port}"
-    print(f"服务已启动，局域网访问：{url}")
-    # 只在主进程弹窗
+    # 只在主进程打印和弹窗
     if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        print(f"服务已启动，局域网访问：{url}")
         try:
             webbrowser.open(url)
         except Exception as e:
