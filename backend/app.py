@@ -80,6 +80,6 @@ if __name__ == '__main__':
         print(f"服务已启动，局域网访问：{url}")
         try:
             webbrowser.open(url)
-        except Exception as e:
+    except Exception as e:
             logging.warning(f"[警告] 自动打开浏览器失败: {e}")
     app.run(host='0.0.0.0', port=port, debug=True) 
